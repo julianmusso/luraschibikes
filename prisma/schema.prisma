@@ -1,0 +1,178 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id
+  name          String
+  email         String
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  orders        Order[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@map("verification")
+}
+
+// ========================================
+// PEDIDOS Y PAGOS
+// ========================================
+
+// Pedidos
+model Order {
+  id                  String      @id @default(cuid())
+  orderNumber         String      @unique // Ej: "ORD-20251112-001"
+  userId              String?
+  user                User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status              OrderStatus @default(PENDING)
+  
+  // Montos
+  subtotal            Float
+  shippingCost        Float       @default(0)
+  total               Float
+  
+  // Datos del cliente
+  customerEmail       String
+  customerName        String
+  customerPhone       String?
+  shippingAddress     Json        // {street, city, state, zipCode, country, etc}
+  
+  // Mercado Pago
+  mercadoPagoPaymentId String?    @unique
+  
+  // Relaciones
+  items               OrderItem[]
+  payment             Payment?
+  
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  @@map("order")
+}
+
+// Items del pedido (snapshot del producto al momento de compra)
+model OrderItem {
+  id              String   @id @default(cuid())
+  orderId         String
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  // Snapshot del producto (guardamos data porque puede cambiar después)
+  productId       String
+  productName     String
+  productSku      String?
+  variationData   Json?
+  
+  // Precios al momento de la compra
+  quantity        Int
+  price           Float    // Precio unitario
+  subtotal        Float    // quantity * price
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("order_item")
+}
+
+// Información de pago de Mercado Pago
+model Payment {
+  id                String        @id @default(cuid())
+  orderId           String        @unique
+  order             Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  // Mercado Pago
+  mercadoPagoId     String        @unique // payment_id de MP
+  status            PaymentStatus @default(PENDING)
+  amount            Float
+  paymentMethod     String?       // credit_card, debit_card, etc
+  paymentType       String?       // Ej: visa, master, etc
+  
+  // Data adicional de MP (webhook payload completo)
+  metadata          Json?
+  
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@map("payment")
+}
+
+// Enums
+enum OrderStatus {
+  PENDING       // Pendiente de pago
+  PAID          // Pagado
+  PROCESSING    // En preparación
+  SHIPPED       // Enviado
+  DELIVERED     // Entregado
+  CANCELLED     // Cancelado
+  REFUNDED      // Reembolsado
+}
+
+enum PaymentStatus {
+  PENDING       // Pendiente
+  APPROVED      // Aprobado
+  REJECTED      // Rechazado
+  CANCELLED     // Cancelado
+  REFUNDED      // Reembolsado
+  IN_PROCESS    // En proceso
+}
