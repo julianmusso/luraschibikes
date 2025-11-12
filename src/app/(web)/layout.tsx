@@ -9,7 +9,9 @@ export default function WebLayout({
     return (
         <div>
             <Header_Component />
-            <main>{children}</main>
+            <main>
+                {children}
+            </main>
             <Footer_Component />
         </div>
     )
