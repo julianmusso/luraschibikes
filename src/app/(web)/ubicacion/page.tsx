@@ -1,4 +1,4 @@
-export default function UbicacionPage() {
+export default function Ubicacion_Page() {
     return (
         <div>
             Ubicacion Page

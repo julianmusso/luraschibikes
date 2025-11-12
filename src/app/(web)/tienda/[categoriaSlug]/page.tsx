@@ -1,4 +1,4 @@
-export default function Tienda_Page() {
+export default function Categoria_Page() {
     return (
         <div>
             Tienda Page

@@ -1,4 +1,4 @@
-export default function ProductoPage() {
+export default function Producto_Page() {
     return (
         <div>
             Producto Page

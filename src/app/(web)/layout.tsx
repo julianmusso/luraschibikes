@@ -1,7 +1,7 @@
 import { Footer_Component } from "@/components/app.footer"
 import { Header_Component } from "@/components/app.header"
 
-export default function WebLayout({
+export default function Web_Layout({
     children,
 }: {
     children: React.ReactNode
