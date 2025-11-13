@@ -2,7 +2,7 @@
 
 import { FaShoppingCart, FaSpinner } from "react-icons/fa";
 import { useState, useEffect } from "react";
-import { getCartProducts } from "@/lib/actions/cart";
+import { getCartProducts } from "@/core/server.getCartProducts";
 
 type CartItem = {
     id: string;

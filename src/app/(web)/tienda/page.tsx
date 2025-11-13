@@ -1,7 +1,7 @@
 export default function Tienda_Page() {
     return (
-        <div>
+        <main>
             Tienda Page
-        </div>
+        </main>
     )
 }

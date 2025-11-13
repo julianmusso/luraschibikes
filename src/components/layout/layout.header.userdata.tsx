@@ -1,7 +1,7 @@
 
 
-import { Cart_Component } from "./app.header.userdata.cart";
-import { Account_Component } from "./app.header.userdata.account";
+import { Cart_Component } from "./layout.header.userdata.cart";
+import { Account_Component } from "./layout.header.userdata.account";
 import { getSession } from "@/lib/getSession";
 
 export async function UserData_Component() {
