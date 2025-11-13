@@ -2,12 +2,9 @@ import {
     LURASCHI_BIKES_ADDRESS_1, 
     LURASCHI_BIKES_ADDRESS_2, 
     LURASCHI_BIKES_EMAIL,
-    LURASCHI_BIKES_FACEBOOK, 
-    LURASCHI_BIKES_INSTAGRAM 
 } from '@/lib/constants/luraschibikes';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FaInstagram, FaFacebook } from 'react-icons/fa6'
 import { Floating_WhatsappButton, WhatsappGreenButton } from './layout.footer.whatsappbuttons';
 import { Footer_RedesSociales_Component } from './layout.footer.redessociales';
 
