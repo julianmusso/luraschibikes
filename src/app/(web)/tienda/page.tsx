@@ -11,7 +11,7 @@ export default async function Tienda_Page({
 }: {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-    // Transformar searchParams en filters (Promise)
+    // Transformar searchParams en filters - la promise se resuelve dentro del Suspense
     const filters = searchParams.then((params): Filters => {
         // Extraer atributos dinámicos (cualquier param que no sea conocido)
         const knownParams = ['page', 'category', 'minPrice', 'maxPrice', 'search', 'brand', 'sort'];

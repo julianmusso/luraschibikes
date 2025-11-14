@@ -5,9 +5,9 @@ import { ProductDetailSkeleton } from "@/components/product/product-detail.skele
 export default async function Producto_Page({
     params,
 }: {
-    params: Promise<{ slug: string }>;
+    params: Promise<{ productSlug: string }>;
 }) {
-    const slug = params.then(p => p.slug);
+    const slug = params.then(p => p.productSlug);
 
     return (
         <main className="max-w-7xl mx-auto my-16 px-4 lg:px-0">

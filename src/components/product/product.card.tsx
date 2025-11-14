@@ -16,7 +16,7 @@ export function ProductCard({ product }: ProductCardProps) {
     const isLowStock = product.stock > 0 && product.stock <= 5;
 
     return (
-        <Link href={`/producto/${product.slug.current}`}>
+        <Link href={`/tienda/${product.slug.current}`}>
             <div className="group border border-sky-500 bg-slate-900/80 text-white rounded-lg overflow-hidden hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/20 transition-all duration-300">
                 {/* Imagen del producto */}
                 <div className="relative aspect-square bg-slate-800/50 overflow-hidden">

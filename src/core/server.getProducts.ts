@@ -36,14 +36,24 @@ export async function getProducts(filters: ProductFilters = {}): Promise<Product
     } = filters;
 
     // Construir filtros GROQ dinámicamente
-    const filterConditions = ['_type == \"product\"'];
+    const filterConditions = ['_type == "product"'];
     
     if (status) {
         filterConditions.push(`status == "${status}"`);
     }
     
     if (category) {
-        filterConditions.push(`"${category}" in categories[]->slug.current`);
+        // Importar función para obtener categoría y subcategorías
+        const { getCategoryWithChildren } = await import('@/core/server.getCategories');
+        const categorySlugs = await getCategoryWithChildren(category);
+        
+        // Buscar productos que tengan la categoría O cualquiera de sus subcategorías
+        if (categorySlugs.length > 0) {
+            const categoryConditions = categorySlugs.map(slug => 
+                `"${slug}" in categories[]->slug.current`
+            ).join(' || ');
+            filterConditions.push(`(${categoryConditions})`);
+        }
     }
     
     if (minPrice !== undefined) {
