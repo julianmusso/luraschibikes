@@ -16,6 +16,9 @@ export const ROUTES: RouteItem[] = [
             { name: "Indumentaria", path: "/tienda?category=indumentaria" },
         ]
     },
+    { name: "Bicicletas", path: "/tienda?category=bicicletas" },
+    { name: "Componentes", path: "/tienda?category=componentes" },
+    { name: "Accesorios", path: "/tienda?category=accesorios" },
+    { name: "Indumentaria", path: "/tienda?category=indumentaria" },
     { name: "Contacto", path: "/contacto" },
-    { name: "Ubicación", path: "/ubicacion" },
 ]
