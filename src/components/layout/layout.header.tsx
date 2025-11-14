@@ -6,13 +6,14 @@ import { UserData_Component } from "./layout.header.userdata";
 import { MobileMenu_Server_Component } from "./layout.header.mobile.server";
 import { Cart_Component } from "./layout.header.userdata.cart";
 import { FaBars } from "react-icons/fa";
+import Link from "next/link";
 
 export function Header_Component() {
     return (
         <header className="z-50 bg-linear-to-r from-blue-600 to-sky-900 h-20 sticky top-0 w-full shadow-md flex ">
             <div className="max-w-7xl w-full mx-auto flex justify-between px-4 lg:px-0">
                 {/* Logo */}
-                <div className="my-auto">
+                <Link href="/" className="my-auto">
                     <Image
                         src={"/assets/logo-white.webp"}
                         alt="Logo"
@@ -20,7 +21,7 @@ export function Header_Component() {
                         height={50}
                         className="h-auto w-auto max-h-12"
                     />
-                </div>
+                </Link>
 
                 {/* Desktop Navigation */}
                 <div className="hidden md:flex gap-10 my-auto">

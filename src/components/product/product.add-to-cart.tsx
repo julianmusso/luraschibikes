@@ -8,13 +8,16 @@ type AddToCartProps = {
     productId: string;
     quantity?: number;
     onCartUpdate?: () => void;
+    disabled?: boolean;
 }
 
-export function AddToCart_Component({ productId, quantity = 1, onCartUpdate }: AddToCartProps) {
+export function AddToCart_Component({ productId, quantity = 1, onCartUpdate, disabled = false }: AddToCartProps) {
     const [isAdding, setIsAdding] = useState(false);
     const [justAdded, setJustAdded] = useState(false);
 
     const handleAddToCart = () => {
+        if (disabled) return;
+        
         setIsAdding(true);
         
         // Agregar al carrito
@@ -36,11 +39,13 @@ export function AddToCart_Component({ productId, quantity = 1, onCartUpdate }: A
     return (
         <button
             onClick={handleAddToCart}
-            disabled={isAdding}
+            disabled={isAdding || disabled}
             className={`
+                w-full cursor-pointer
                 ${justAdded 
                     ? 'bg-green-600 hover:bg-green-700' 
                     : 'bg-sky-500 hover:bg-sky-600'}
+                ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
                 text-white font-semibold py-3 px-6 rounded-lg
                 transition-all duration-200
                 flex items-center gap-2 justify-center

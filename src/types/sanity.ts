@@ -7,6 +7,8 @@ export type ProductFilters = {
     brand?: string;
     status?: 'published' | 'draft' | 'archived';
     sort?: 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'name-asc' | 'name-desc';
+    // Atributos filtrables dinámicos: { "tipo-freno": ["hidraulico", "disco"], "talla": ["m", "l"] }
+    attributes?: Record<string, string[]>;
 }
 
 export type ProductListResult = {

@@ -24,7 +24,7 @@ export function Account_Component({ session }: AccountProps) {
             onMouseEnter={() => setIsOpen(true)}
             onMouseLeave={() => setIsOpen(false)}
         >
-            <button className="text-white hover:text-sky-300 transition-all">
+            <button className=" p-3 cursor-pointer text-white hover:text-sky-300 transition-all">
                 <FaUser size={24} />
             </button>
 

@@ -31,11 +31,12 @@ export async function getProducts(filters: ProductFilters = {}): Promise<Product
         search,
         brand,
         status = 'published',
-        sort = 'newest'
+        sort = 'newest',
+        attributes,
     } = filters;
 
     // Construir filtros GROQ dinámicamente
-    const filterConditions = ['_type == "product"'];
+    const filterConditions = ['_type == \"product\"'];
     
     if (status) {
         filterConditions.push(`status == "${status}"`);
@@ -60,6 +61,20 @@ export async function getProducts(filters: ProductFilters = {}): Promise<Product
     
     if (brand) {
         filterConditions.push(`brand == "${brand}"`);
+    }
+
+    // Filtros por atributos dinámicos
+    if (attributes && Object.keys(attributes).length > 0) {
+        Object.entries(attributes).forEach(([attrSlug, values]) => {
+            if (values && values.length > 0) {
+                // Para cada atributo, verificar que el producto tenga al menos uno de los valores seleccionados
+                const valueConditions = values.map(valueSlug => 
+                    `"${valueSlug}" in filterAttributes[attribute->slug.current == "${attrSlug}"].selectedValues[]`
+                ).join(' || ');
+                
+                filterConditions.push(`(${valueConditions})`);
+            }
+        });
     }
 
     const filterString = filterConditions.join(' && ');

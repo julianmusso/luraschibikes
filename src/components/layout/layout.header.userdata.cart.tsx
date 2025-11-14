@@ -3,6 +3,8 @@
 import { FaShoppingCart, FaSpinner } from "react-icons/fa";
 import { useState, useEffect } from "react";
 import { getCartProducts } from "@/core/server.getCartProducts";
+import Link from "next/link";
+import { CartBadge } from "./layout.header.userdata.cart.client";
 
 type CartItem = {
     id: string;
@@ -16,18 +18,11 @@ type CartProduct = CartItem & {
 }
 
 export function Cart_Component() {
-    const [cartItems, setCartItems] = useState<CartItem[]>(() => {
-        if (typeof window !== 'undefined') {
-            const storedCart = localStorage.getItem('cart');
-            return storedCart ? JSON.parse(storedCart) : [];
-        }
-        return [];
-    });
+    const [cartItems, setCartItems] = useState<CartItem[]>([]);
     const [cartProducts, setCartProducts] = useState<CartProduct[]>([]);
-    const [isLoading, setIsLoading] = useState(cartItems.length > 0);
+    const [isLoading, setIsLoading] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
 
-    // Escuchar actualizaciones del carrito
     useEffect(() => {
         const handleCartUpdate = () => {
             const storedCart = localStorage.getItem('cart');
@@ -35,10 +30,9 @@ export function Cart_Component() {
             setCartItems(newCart);
         };
 
-        // Evento personalizado (misma pestaña)
+        handleCartUpdate();
+
         window.addEventListener('cartUpdated', handleCartUpdate);
-        
-        // Evento storage (otras pestañas)
         window.addEventListener('storage', (e) => {
             if (e.key === 'cart') {
                 handleCartUpdate();
@@ -73,21 +67,15 @@ export function Cart_Component() {
         loadProducts();
     }, [cartItems]);
 
-    const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-
     return (
         <div 
             className="relative"
             onMouseEnter={() => setIsOpen(true)}
             onMouseLeave={() => setIsOpen(false)}
         >
-            <button className="relative text-white hover:text-sky-300 transition-all">
+            <button className="relative p-3 cursor-pointer text-white hover:text-sky-300 transition-all">
                 <FaShoppingCart size={24} />
-                {totalItems > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-sky-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                        {totalItems > 99 ? '99+' : totalItems}
-                    </span>
-                )}
+                <CartBadge />
             </button>
 
             {/* Dropdown del carrito */}
@@ -117,16 +105,16 @@ export function Cart_Component() {
                                                 <p className="text-gray-300 text-sm">Cantidad: {item.quantity}</p>
                                             </div>
                                             <p className="text-sky-300 font-semibold ml-2">
-                                                ${(item.price * item.quantity).toFixed(2)}
+                                                ${(item.price * item.quantity).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                             </p>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                             <div className="px-4 py-3 bg-sky-900">
-                                <button className="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 px-4 rounded transition-all">
+                                <Link href="/carrito" className="block w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 px-4 rounded transition-all text-center">
                                     Ver Carrito
-                                </button>
+                                </Link>
                             </div>
                         </>
                     )}

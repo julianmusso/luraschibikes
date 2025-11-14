@@ -8,7 +8,7 @@ export async function UserData_Component() {
     const session = await getSession();
     
     return (
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-1">
             <Cart_Component />
             <Account_Component session={session} />
         </div>
