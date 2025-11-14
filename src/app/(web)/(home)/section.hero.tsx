@@ -30,7 +30,7 @@ export default function HeroSection() {
             <div className="relative z-10 w-full">
                 <div className="max-w-7xl mx-auto px-8 flex flex-col justify-center h-full">
                     <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-[9rem] leading-none font-bold font-heading tracking-widest">LURASCHI</h1>
-                    <span className="text-6xl sm:text-7xl md:text-8xl lg:text-[9rem] leading-none font-bold font-heading tracking-widest text-blue-400">BIKES</span>
+                    <span className="text-6xl sm:text-7xl md:text-8xl lg:text-[9rem] leading-none font-bold font-heading tracking-widest text-sky-400">BIKES</span>
                     <div>
                         <p className="mt-4 max-w-xl text-base sm:text-lg md:text-xl font-base">
                             Diseñadas para la ciudad. Construidas para durar.

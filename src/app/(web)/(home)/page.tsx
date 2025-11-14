@@ -2,8 +2,8 @@ import HeroSection from "./section.hero";
 
 export default function Home_Page() {
   return (
-    <section className="">
+    <main className="">
       <HeroSection />
-    </section>
+    </main>
   );
 }

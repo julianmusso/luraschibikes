@@ -10,10 +10,10 @@ export default function Web_Layout({
     return (
         <div className="min-h-screen flex flex-col">
             <Header_Component />
-            <main className="flex-1">
+            <div className="flex-1">
                 <BackgroundGrid />
                 {children}
-            </main>
+            </div>
             <Footer_Component />
         </div>
     )
