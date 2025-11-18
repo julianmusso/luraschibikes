@@ -72,7 +72,7 @@ async function getOrder(orderNumber: string): Promise<Order | null> {
                     product: { _ref: 'product-1' },
                     productSnapshot: {
                         name: 'Bicicleta Mountain Bike Pro',
-                        imageUrl: 'https://via.placeholder.com/200x200.png?text=Bici+MTB'
+                        imageUrl: '/assets/images/product_placeholder.png'
                     },
                     quantity: 1,
                     unitPrice: 450000,
@@ -83,7 +83,7 @@ async function getOrder(orderNumber: string): Promise<Order | null> {
                     product: { _ref: 'product-2' },
                     productSnapshot: {
                         name: 'Casco Profesional',
-                        imageUrl: 'https://via.placeholder.com/200x200.png?text=Casco'
+                        imageUrl: '/assets/images/product_placeholder.png'
                     },
                     quantity: 2,
                     unitPrice: 35000,

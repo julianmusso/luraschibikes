@@ -2,7 +2,7 @@
 
 import { LuraschiCard } from "@/components/ui/ui.card";
 import { PageTitle } from "@/components/ui/ui.page.title";
-import { getCart, clearCart, updateQuantity } from "@/lib/cart";
+import { getCart, updateQuantity } from "@/lib/cart";
 import { getCartProducts } from "@/core/server.getCartProducts";
 import { StartBuying } from "@/core/server.StartBuying";
 import { useEffect, useState } from "react";

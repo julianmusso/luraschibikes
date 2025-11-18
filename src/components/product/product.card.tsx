@@ -8,7 +8,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
     const hasDiscount = product.salePrice && product.salePrice < product.price;
-    const discountPercentage = hasDiscount 
+    const discountPercentage = hasDiscount
         ? Math.round(((product.price - (product.salePrice ?? 0)) / product.price) * 100)
         : 0;
 
@@ -21,7 +21,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 {/* Imagen del producto */}
                 <div className="relative aspect-square bg-slate-800/50 overflow-hidden">
                     <Image
-                        src={product.images?.[0]?.asset.url || '/assets/images/product-placeholder.png'}
+                        src={product.images?.[0]?.asset.url || '/assets/images/product_placeholder.png'}
                         alt={product.images?.[0]?.alt || product.name}
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-300"

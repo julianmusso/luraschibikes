@@ -3,6 +3,8 @@ import crypto from 'crypto';
 import { updateProductsStock } from '@/core/server.updateProductsStock';
 import { getCartProducts } from '@/core/server.getCartProducts';
 import { client } from '@/sanity/lib/client';
+import { sendPaymentConfirmedEmail } from '@/core/email.paymentConfirmed';
+import { sendPaymentRefundedEmail } from '@/core/email.paymentRefunded';
 
 export async function POST(request: NextRequest) {
   try {
@@ -91,8 +93,22 @@ async function processPaymentNotification(paymentId: string) {
         }
       });
 
-      // TODO: Enviar email notificando refund
-      console.log('💸 Refund procesado por stock insuficiente');
+      // Enviar email notificando refund
+      await sendPaymentRefundedEmail(
+        {
+          email: metadata.customer_email,
+          nombre: metadata.customer_name
+        },
+        {
+          orderNumber: metadata.order_number,
+          orderUrl: `${process.env.NEXT_PUBLIC_URL}/pedido/${metadata.order_number}`,
+          customerName: metadata.customer_name,
+          amount: payment.transaction_amount,
+          reason: 'No pudimos procesar tu pedido porque uno o más productos se quedaron sin stock después de la compra. Disculpá las molestias.'
+        }
+      );
+      
+      console.log('💸 Refund procesado por stock insuficiente + email enviado');
       return;
     }
 
@@ -137,9 +153,38 @@ async function processPaymentNotification(paymentId: string) {
       }))
     );
 
-    console.log(`✅ Orden actualizada a PAID: ${orderNumber}`);
     console.log(`✅ Stock actualizado correctamente`);
-    // TODO: Enviar email de confirmación
+
+    // Enviar email de confirmación de pago
+    const productsWithQuantity = cartItems.map((item: { id: string; quantity: number }) => {
+      const product = products.find((p: { id: string; name: string; price: number }) => p.id === item.id);
+      return {
+        name: product?.name || 'Producto',
+        quantity: item.quantity,
+        price: product?.price || 0
+      };
+    });
+
+    const total = productsWithQuantity.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    
+    const shippingAddress = `${metadata.shipping_address}, ${metadata.shipping_city}, ${metadata.shipping_province} (${metadata.shipping_zipcode})`;
+
+    await sendPaymentConfirmedEmail(
+      {
+        email: metadata.customer_email,
+        nombre: metadata.customer_name
+      },
+      {
+        orderNumber: metadata.order_number,
+        orderUrl: `${process.env.NEXT_PUBLIC_URL}/pedido/${metadata.order_number}`,
+        customerName: metadata.customer_name,
+        items: productsWithQuantity,
+        total,
+        shippingAddress
+      }
+    );
+
+    console.log(`✅ Email de confirmación enviado a ${metadata.customer_email}`);
 
   } catch (error) {
     console.error('Error en processPaymentNotification:', error);
