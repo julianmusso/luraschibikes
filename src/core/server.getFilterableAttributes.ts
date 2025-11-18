@@ -1,53 +1,36 @@
 'use server'
 
 import { client } from '@/sanity/lib/client';
-import { cacheTag, cacheLife, updateTag } from 'next/cache';
-import { CACHE_TAGS } from '@/lib/constants/cachetags';
+import { cacheTag, cacheLife } from 'next/cache';
 
-export type FilterAttribute = {
+export type FilterableFeature = {
     _id: string;
     name: string;
-    slug: { current: string };
     icon?: string;
-    inputType: 'checkbox' | 'radio' | 'select';
-    priority: number;
-    values: Array<{
-        label: string;
-        slug: { current: string };
-    }>;
+    filterInputType: 'checkbox' | 'radio' | 'select';
+    filterPriority: number;
+    fixedValues: string[];
 }
 
 /**
- * Obtiene todos los atributos filtrables configurados en Sanity
- * Solo retorna atributos marcados como filtrables
+ * Obtiene todas las características filtrables con sus valores predefinidos
+ * Solo retorna features marcadas como filtrables
  */
-export async function getFilterableAttributes(): Promise<FilterAttribute[]> {
+export async function getFilterableAttributes(): Promise<FilterableFeature[]> {
     'use cache';
     
-    cacheTag('filter-attributes');
-    cacheLife({ stale: 86400 }); // 24 horas - rara vez cambian
+    cacheTag('filterable-features');
+    cacheLife({ expire: 3600 }); // 1 hora
     
-    const query = `*[_type == "filterAttribute" && filterable == true] | order(priority asc, name asc) {
+    const query = `*[_type == "feature" && filterable == true && hasFixedValues == true] | order(filterPriority asc, name asc) {
         _id,
         name,
-        slug,
         icon,
-        inputType,
-        priority,
-        "values": values[]{
-            label,
-            slug
-        }
+        filterInputType,
+        filterPriority,
+        fixedValues
     }`;
 
-    const attributes = await client.fetch(query);
-    return attributes || [];
-}
-
-/**
- * Revalida el caché de atributos filtrables
- */
-export async function revalidateFilterAttributes(): Promise<void> {
-    'use server';
-    updateTag('filter-attributes');
+    const features = await client.fetch(query);
+    return features || [];
 }

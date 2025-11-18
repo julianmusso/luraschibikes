@@ -174,49 +174,6 @@ export const productType = defineType({
             ],
         }),
         
-        // Atributos filtrables
-        defineField({
-            name: 'filterAttributes',
-            title: 'Atributos filtrables',
-            description: 'Atributos que se usan para filtrar productos en la tienda',
-            type: 'array',
-            of: [
-                {
-                    type: 'object',
-                    fields: [
-                        {
-                            name: 'attribute',
-                            title: 'Atributo',
-                            type: 'reference',
-                            to: [{ type: 'filterAttribute' }],
-                            validation: (rule) => rule.required(),
-                        },
-                        {
-                            name: 'selectedValues',
-                            title: 'Valores seleccionados',
-                            type: 'array',
-                            of: [{ type: 'string' }],
-                            description: 'Selecciona uno o más valores de este atributo',
-                            validation: (rule) => rule.required().min(1),
-                            // TODO: Aquí iría un input personalizado que muestra solo los valores del atributo seleccionado
-                        },
-                    ],
-                    preview: {
-                        select: {
-                            attributeName: 'attribute.name',
-                            values: 'selectedValues',
-                        },
-                        prepare({ attributeName, values }) {
-                            return {
-                                title: attributeName || 'Sin atributo',
-                                subtitle: values && values.length > 0 ? values.join(', ') : 'Sin valores',
-                            }
-                        },
-                    },
-                },
-            ],
-        }),
-        
         // Compatibilidad
         defineField({
             name: 'compatibility',

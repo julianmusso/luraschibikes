@@ -11,6 +11,7 @@ export async function getCartProducts(productIds: string[]) {
         "id": _id,
         "name": name,
         "price": price,
+        "stock": stock,
         "image": images[0].asset->url
     }`;
 

@@ -2,27 +2,32 @@
 
 import { LuraschiCard } from "@/components/ui/ui.card";
 import { PageTitle } from "@/components/ui/ui.page.title";
-import { getCart, clearCart } from "@/lib/cart";
+import { getCart, clearCart, updateQuantity } from "@/lib/cart";
 import { getCartProducts } from "@/core/server.getCartProducts";
+import { StartBuying } from "@/core/server.StartBuying";
 import { useEffect, useState } from "react";
 import { FaCreditCard, FaMapMarkerAlt, FaUser } from "react-icons/fa";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 
 type CartProduct = {
     id: string;
     name: string;
     price: number;
+    stock: number;
     image: string;
 };
 
 export default function Checkout_Page() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [cartItems, setCartItems] = useState<{ id: string; quantity: number }[]>([]);
     const [products, setProducts] = useState<CartProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
+    const [stockIssues, setStockIssues] = useState<Array<{ productId: string; productName: string; requested: number; available: number }>>([]);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
         firstName: '',
@@ -38,6 +43,26 @@ export default function Checkout_Page() {
     });
 
     useEffect(() => {
+        // Detectar errores de pago desde query params
+        const error = searchParams.get('error');
+        if (error) {
+            switch (error) {
+                case 'payment_cancelled':
+                    setErrorMessage('El pago fue cancelado. Podés intentar nuevamente cuando quieras.');
+                    break;
+                case 'payment_failed':
+                    setErrorMessage('El pago falló. Por favor, verificá tus datos e intentá nuevamente.');
+                    break;
+                case 'payment_rejected':
+                    setErrorMessage('El pago fue rechazado. Intentá con otro método de pago.');
+                    break;
+                default:
+                    setErrorMessage('Ocurrió un error con el pago. Intentá nuevamente.');
+            }
+        }
+    }, [searchParams]);
+
+    useEffect(() => {
         const loadCart = async () => {
             const cart = getCart();
             setCartItems(cart);
@@ -49,6 +74,25 @@ export default function Checkout_Page() {
 
             const productData = await getCartProducts(cart.map(item => item.id));
             setProducts(productData);
+            
+            // Validar stock
+            const issues = cart
+                .map(item => {
+                    const product = productData.find((p: CartProduct) => p.id === item.id);
+                    if (!product) return null;
+                    if (item.quantity > product.stock) {
+                        return {
+                            productId: item.id,
+                            productName: product.name,
+                            requested: item.quantity,
+                            available: product.stock
+                        };
+                    }
+                    return null;
+                })
+                .filter(Boolean) as Array<{ productId: string; productName: string; requested: number; available: number }>;
+            
+            setStockIssues(issues);
             setLoading(false);
         };
 
@@ -64,15 +108,74 @@ export default function Checkout_Page() {
         return sum + (product.price * quantity);
     }, 0);
 
+    const handleAdjustStock = () => {
+        stockIssues.forEach(issue => {
+            updateQuantity(issue.productId, issue.available);
+        });
+        // Recargar carrito
+        window.location.reload();
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setProcessing(true);
 
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        try {
+            // Llamar al Server Action
+            const result = await StartBuying(
+                cartItems,
+                {
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    email: formData.email,
+                    phone: formData.phone,
+                    address: formData.address,
+                    city: formData.city,
+                    province: formData.province,
+                    zipCode: formData.zipCode
+                }
+            );
 
-        clearCart();
-        alert('¡Pedido realizado con éxito! Pronto nos contactaremos.');
-        router.push('/');
+            if (!result.success) {
+                let errorMsg = 'No se pudo procesar la compra';
+                
+                switch (result.error) {
+                    case 'insufficient_stock':
+                        errorMsg = 'Stock insuficiente. Por favor, ajustá las cantidades.';
+                        setErrorMessage(errorMsg);
+                        router.push('/carrito');
+                        break;
+                    case 'mercadopago_unauthorized':
+                    case 'mercadopago_invalid_token':
+                        errorMsg = 'Error de configuración de MercadoPago. Contactá a soporte.';
+                        setErrorMessage(errorMsg);
+                        break;
+                    case 'mercadopago_timeout':
+                        errorMsg = 'MercadoPago no respondió. Intentá nuevamente en unos minutos.';
+                        setErrorMessage(errorMsg);
+                        break;
+                    case 'order_creation_failed':
+                        errorMsg = 'No se pudo crear el pedido. Intentá nuevamente.';
+                        setErrorMessage(errorMsg);
+                        break;
+                    default:
+                        errorMsg = result.message || 'Error desconocido al procesar la compra';
+                        setErrorMessage(errorMsg);
+                }
+                
+                setProcessing(false);
+                return;
+            }
+
+            // Redirigir a MercadoPago usando router
+            if (result.init_point) {
+                router.push(result.init_point);
+            }
+        } catch (error) {
+            console.error('Error en checkout:', error);
+            alert('Ocurrió un error. Por favor, intentá nuevamente.');
+            setProcessing(false);
+        }
     };
 
     if (loading) {
@@ -89,6 +192,58 @@ export default function Checkout_Page() {
     return (
         <main className="max-w-7xl mx-auto my-16 px-4 lg:px-0">
             <PageTitle title="Finalizar Compra" subtitle="Completá tus datos para procesar el pedido" />
+
+            {/* Banner de error de pago */}
+            {errorMessage && (
+                <div className="mb-6 p-4 bg-red-900/30 border-2 border-red-600 rounded-lg">
+                    <div className="flex items-start gap-3">
+                        <span className="text-2xl">❌</span>
+                        <div className="flex-1">
+                            <h3 className="text-red-400 font-bold text-lg mb-2">Error en el pago</h3>
+                            <p className="text-red-300 mb-3">{errorMessage}</p>
+                            <button
+                                onClick={() => setErrorMessage(null)}
+                                className="bg-red-600 hover:bg-red-500 text-white font-semibold px-4 py-2 rounded transition-colors"
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Banner de problemas de stock */}
+            {stockIssues.length > 0 && (
+                <div className="mb-6 p-4 bg-yellow-900/30 border-2 border-yellow-600 rounded-lg">
+                    <div className="flex items-start gap-3">
+                        <span className="text-2xl">⚠️</span>
+                        <div className="flex-1">
+                            <h3 className="text-yellow-400 font-bold text-lg mb-2">Problemas de stock detectados</h3>
+                            <ul className="space-y-1 text-yellow-300 text-sm mb-3">
+                                {stockIssues.map(issue => (
+                                    <li key={issue.productId}>
+                                        <strong>{issue.productName}:</strong> Pediste {issue.requested}, solo hay {issue.available} disponibles
+                                    </li>
+                                ))}
+                            </ul>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={handleAdjustStock}
+                                    className="bg-yellow-600 hover:bg-yellow-500 text-white font-semibold px-4 py-2 rounded transition-colors"
+                                >
+                                    Ajustar cantidades automáticamente
+                                </button>
+                                <Link
+                                    href="/carrito"
+                                    className="bg-slate-700 hover:bg-slate-600 text-white font-semibold px-4 py-2 rounded transition-colors"
+                                >
+                                    Volver al carrito
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

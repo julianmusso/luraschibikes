@@ -15,6 +15,7 @@ type CartProduct = {
     id: string;
     name: string;
     price: number;
+    stock: number;
     image: string;
 };
 
@@ -181,6 +182,24 @@ export default function Carrito_Page() {
                                                 </button>
                                             </div>
                                         </div>
+
+                                        {/* Warning de stock */}
+                                        {quantity > product.stock && (
+                                            <div className="mt-2 p-2 bg-yellow-900/30 border border-yellow-600 rounded">
+                                                <p className="text-yellow-400 text-sm flex items-center gap-2">
+                                                    ⚠️ Solo hay {product.stock} disponibles
+                                                    <button
+                                                        onClick={() => handleUpdateQuantity(product.id, product.stock)}
+                                                        className="ml-auto text-xs bg-yellow-600 hover:bg-yellow-500 px-2 py-1 rounded transition-colors"
+                                                    >
+                                                        Ajustar a {product.stock}
+                                                    </button>
+                                                </p>
+                                            </div>
+                                        )}
+                                        {quantity <= product.stock && product.stock <= 5 && (
+                                            <p className="mt-2 text-orange-400 text-sm">⚡ Últimas {product.stock} unidades</p>
+                                        )}
                                     </div>
 
                                     {/* Subtotal y eliminar */}

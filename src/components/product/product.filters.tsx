@@ -2,13 +2,13 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import type { FilterAttribute } from '@/core/server.getFilterableAttributes';
+import type { FilterableFeature } from '@/core/server.getFilterableAttributes';
 import type { Category } from '@/types/sanity';
 import { FaSearch, FaTimes } from 'react-icons/fa';
 import * as Icons from 'react-icons/fa';
 
 interface ProductFiltersProps {
-    filterAttributes: FilterAttribute[];
+    filterAttributes: FilterableFeature[];
     categories: Category[];
     brands: string[];
 }
@@ -67,21 +67,21 @@ export function ProductFilters({ filterAttributes, categories, brands }: Product
         updateURL({ brand: current === brand ? null : brand });
     };
 
-    const handleAttributeChange = (attrSlug: string, valueSlug: string) => {
+    const handleAttributeChange = (attrName: string, value: string) => {
         const params = new URLSearchParams(searchParams.toString());
-        const currentValues = params.get(attrSlug)?.split(',') || [];
+        const currentValues = params.get(attrName)?.split(',') || [];
 
         let newValues: string[];
-        if (currentValues.includes(valueSlug)) {
+        if (currentValues.includes(value)) {
             // Remover
-            newValues = currentValues.filter(v => v !== valueSlug);
+            newValues = currentValues.filter(v => v !== value);
         } else {
             // Agregar
-            newValues = [...currentValues, valueSlug];
+            newValues = [...currentValues, value];
         }
 
         updateURL({
-            [attrSlug]: newValues.length > 0 ? newValues.join(',') : null,
+            [attrName]: newValues.length > 0 ? newValues.join(',') : null,
         });
     };
 
@@ -233,7 +233,7 @@ export function ProductFilters({ filterAttributes, categories, brands }: Product
 
             {/* Atributos filtrables dinámicos */}
             {filterAttributes.map((attr) => {
-                const selectedValues = searchParams.get(attr.slug.current)?.split(',') || [];
+                const selectedValues = searchParams.get(attr.name)?.split(',') || [];
 
                 return (
                     <div key={attr._id} className="border border-sky-500 bg-slate-900/80 rounded-lg p-4">
@@ -241,22 +241,23 @@ export function ProductFilters({ filterAttributes, categories, brands }: Product
                             {getIconComponent(attr.icon)}
                             {attr.name}
                         </h3>
-                        <div className="space-y-2">
-                            {attr.values.map((value) => {
-                                const isSelected = selectedValues.includes(value.slug.current);
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                            {attr.fixedValues.map((value) => {
+                                const isSelected = selectedValues.includes(value);
 
                                 return (
                                     <label
-                                        key={value.slug.current}
+                                        key={value}
                                         className="flex items-center gap-2 text-slate-300 hover:text-white cursor-pointer"
                                     >
                                         <input
-                                            type="checkbox"
+                                            type={attr.filterInputType === 'radio' ? 'radio' : 'checkbox'}
+                                            name={attr.filterInputType === 'radio' ? attr.name : undefined}
                                             checked={isSelected}
-                                            onChange={() => handleAttributeChange(attr.slug.current, value.slug.current)}
+                                            onChange={() => handleAttributeChange(attr.name, value)}
                                             className="w-4 h-4 text-blue-600 bg-slate-800 border-slate-600 rounded focus:ring-blue-500"
                                         />
-                                        <span>{value.label}</span>
+                                        <span>{value}</span>
                                     </label>
                                 );
                             })}

@@ -21,7 +21,7 @@ export async function getProducts(filters: ProductFilters = {}): Promise<Product
     }
     
     cacheTag(...tags);
-    cacheLife({ stale: 3600 }); // 1 hora
+    cacheLife({ expire: 600 }); // 10 minutos
     
     const {
         page = 1,
