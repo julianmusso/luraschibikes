@@ -42,25 +42,20 @@ export default function Checkout_Page() {
         paymentMethod: 'transferencia',
     });
 
-    useEffect(() => {
-        // Detectar errores de pago desde query params
-        const error = searchParams.get('error');
-        if (error) {
-            switch (error) {
-                case 'payment_cancelled':
-                    setErrorMessage('El pago fue cancelado. Podés intentar nuevamente cuando quieras.');
-                    break;
-                case 'payment_failed':
-                    setErrorMessage('El pago falló. Por favor, verificá tus datos e intentá nuevamente.');
-                    break;
-                case 'payment_rejected':
-                    setErrorMessage('El pago fue rechazado. Intentá con otro método de pago.');
-                    break;
-                default:
-                    setErrorMessage('Ocurrió un error con el pago. Intentá nuevamente.');
-            }
+    // Detectar errores de pago desde query params (sin useEffect para evitar cascading renders)
+    const error = searchParams.get('error');
+    const errorFromParams = error ? (() => {
+        switch (error) {
+            case 'payment_cancelled':
+                return 'El pago fue cancelado. Podés intentar nuevamente cuando quieras.';
+            case 'payment_failed':
+                return 'El pago falló. Por favor, verificá tus datos e intentá nuevamente.';
+            case 'payment_rejected':
+                return 'El pago fue rechazado. Intentá con otro método de pago.';
+            default:
+                return 'Ocurrió un error con el pago. Intentá nuevamente.';
         }
-    }, [searchParams]);
+    })() : null;
 
     useEffect(() => {
         const loadCart = async () => {
@@ -136,6 +131,8 @@ export default function Checkout_Page() {
                 }
             );
 
+            console.log('>>> Resultado de StartBuying:', result);
+
             if (!result.success) {
                 let errorMsg = 'No se pudo procesar la compra';
                 
@@ -194,15 +191,19 @@ export default function Checkout_Page() {
             <PageTitle title="Finalizar Compra" subtitle="Completá tus datos para procesar el pedido" />
 
             {/* Banner de error de pago */}
-            {errorMessage && (
+            {(errorMessage || errorFromParams) && (
                 <div className="mb-6 p-4 bg-red-900/30 border-2 border-red-600 rounded-lg">
                     <div className="flex items-start gap-3">
                         <span className="text-2xl">❌</span>
                         <div className="flex-1">
                             <h3 className="text-red-400 font-bold text-lg mb-2">Error en el pago</h3>
-                            <p className="text-red-300 mb-3">{errorMessage}</p>
+                            <p className="text-red-300 mb-3">{errorMessage || errorFromParams}</p>
                             <button
-                                onClick={() => setErrorMessage(null)}
+                                onClick={() => {
+                                    setErrorMessage(null);
+                                    // Limpiar query params
+                                    router.replace('/checkout');
+                                }}
                                 className="bg-red-600 hover:bg-red-500 text-white font-semibold px-4 py-2 rounded transition-colors"
                             >
                                 Cerrar
