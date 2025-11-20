@@ -3,7 +3,7 @@
 import { client } from '@/sanity/lib/client';
 import { PRODUCTS_PER_PAGE } from '@/lib/constants/limits';
 import type { ProductFilters, ProductListResult } from '@/types/sanity';
-import { cacheTag, cacheLife, updateTag } from 'next/cache';
+import { updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/constants/cachetags';
 
 /**
@@ -11,17 +11,6 @@ import { CACHE_TAGS } from '@/lib/constants/cachetags';
  * Usa cacheTag para revalidación granular y cacheLife para TTL.
  */
 export async function getProducts(filters: ProductFilters = {}): Promise<ProductListResult> {
-    'use cache';
-    
-    // Configurar caché con tags dinámicos
-    const tags: string[] = [CACHE_TAGS.PRODUCTS_LIST];
-    
-    if (filters.category) {
-        tags.push(CACHE_TAGS.productsByCategory(filters.category));
-    }
-    
-    cacheTag(...tags);
-    cacheLife({ expire: 600 }); // 10 minutos
     
     const {
         page = 1,

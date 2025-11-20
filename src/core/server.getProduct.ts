@@ -1,7 +1,7 @@
 'use server'
 
 import { client } from '@/sanity/lib/client';
-import { cacheTag, cacheLife, updateTag } from 'next/cache';
+import { updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/constants/cachetags';
 
 export type ProductDetail = {
@@ -72,10 +72,6 @@ export type ProductDetail = {
  * Obtiene un producto completo por slug (incluye variantes, specs, etc.)
  */
 export async function getProductBySlug(slug: string): Promise<ProductDetail | null> {
-    'use cache';
-    
-    cacheTag(CACHE_TAGS.productBySlug(slug));
-    cacheLife({ stale: 3600 }); // 1 hora
     
     const query = `*[_type == "product" && slug.current == $slug && status == "published"][0] {
         _id,

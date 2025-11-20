@@ -1,16 +1,12 @@
 'use server'
 
 import { client } from '@/sanity/lib/client';
-import { cacheTag, cacheLife, updateTag } from 'next/cache';
+import { updateTag } from 'next/cache';
 
 /**
  * Obtiene todas las marcas únicas de productos publicados
  */
 export async function getBrands(): Promise<string[]> {
-    'use cache';
-    
-    cacheTag('brands-list');
-    cacheLife({ stale: 3600 }); // 1 hora
     
     const query = `array::unique(*[_type == "product" && status == "published" && defined(brand)].brand) | order(@)`;
 

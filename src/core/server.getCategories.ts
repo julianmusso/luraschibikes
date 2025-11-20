@@ -2,7 +2,7 @@
 
 import { client } from '@/sanity/lib/client';
 import type { Category } from '@/types/sanity';
-import { cacheTag, cacheLife, updateTag } from 'next/cache';
+import { updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/constants/cachetags';
 
 /**
@@ -10,10 +10,6 @@ import { CACHE_TAGS } from '@/lib/constants/cachetags';
  * Las categorías cambian poco, por eso se cachean por más tiempo.
  */
 export async function getCategories(): Promise<Category[]> {
-    'use cache';
-    
-    cacheTag(CACHE_TAGS.CATEGORIES_LIST);
-    cacheLife({ stale: 86400 }); // 24 horas
     
     const query = `*[_type == "category"] | order(name asc) {
         _id,
@@ -37,10 +33,6 @@ export async function getCategories(): Promise<Category[]> {
  * Obtiene una categoría por slug.
  */
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {
-    'use cache';
-    
-    cacheTag(CACHE_TAGS.categoryBySlug(slug));
-    cacheLife({ stale: 86400 }); // 24 horas
     
     const query = `*[_type == "category" && slug.current == $slug][0] {
         _id,
@@ -63,10 +55,6 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
  * Obtiene categorías principales (sin padre).
  */
 export async function getRootCategories(): Promise<Category[]> {
-    'use cache';
-    
-    cacheTag(CACHE_TAGS.CATEGORIES_LIST, 'root-categories');
-    cacheLife({ stale: 86400 }); // 24 horas
     
     const query = `*[_type == "category" && !defined(parent)] | order(name asc) {
         _id,
@@ -85,11 +73,7 @@ export async function getRootCategories(): Promise<Category[]> {
  * Útil para filtrar productos que pertenezcan a una categoría o cualquiera de sus hijas.
  */
 export async function getCategoryWithChildren(slug: string): Promise<string[]> {
-    'use cache';
-    
-    cacheTag(CACHE_TAGS.categoryBySlug(slug));
-    cacheLife({ stale: 86400 }); // 24 horas
-    
+
     const query = `
         *[_type == "category" && slug.current == $slug][0] {
             "slug": slug.current,

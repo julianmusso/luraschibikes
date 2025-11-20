@@ -9,7 +9,6 @@ import LogoutButton from "./LogoutButton";
 import ProfileEditor from "./ProfileEditor";
 import { Suspense } from "react";
 import { PrismaClient } from "@prisma/client";
-import { cacheLife, cacheTag } from "next/cache";
 
 const prisma = new PrismaClient();
 
@@ -43,10 +42,6 @@ async function getUserOrders(userEmail: string): Promise<Order[]> {
 }
 
 async function getDatosUsuario(userId: string) {
-    'use cache'
-
-    cacheLife({ stale: 300 }); // 5 minutos
-    cacheTag(`user:${userId}`);
 
     // Obtener datos completos del usuario desde Prisma
     const user = await prisma.user.findUnique({

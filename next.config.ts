@@ -2,7 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  cacheComponents: true,
+  // cacheComponents disabled due to incompatibility with Sanity Studio
+  // Studio uses cookies() in metadata which conflicts with cacheComponents
+  // cacheComponents: true,
   images: {
     remotePatterns: [
       {

@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     description: 'Tienda especializada en bicicletas de montaña, ruta, urbanas y accesorios.',
     images: [
       {
-        url: '/assets/logo-white.webp',
+        url: '/assets/logo-black.webp',
         width: 1200,
         height: 630,
         alt: 'Luraschi Bikes',
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Luraschi Bikes - Bicicletas y Accesorios',
     description: 'Tienda especializada en bicicletas de montaña, ruta, urbanas y accesorios.',
-    images: ['/assets/logo-white.webp'],
+    images: ['/assets/logo-black.webp'],
   },
   robots: {
     index: true,
