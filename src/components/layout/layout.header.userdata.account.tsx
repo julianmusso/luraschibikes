@@ -3,6 +3,8 @@
 import { FaUser } from "react-icons/fa";
 import { useState } from "react";
 import Link from "next/link";
+import { authClient } from "@/lib/authClient";
+import { useRouter, usePathname } from "next/navigation";
 
 type AccountProps = {
     session: {
@@ -15,8 +17,32 @@ type AccountProps = {
 }
 
 export function Account_Component({ session }: AccountProps) {
+    const router = useRouter();
+    const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
     const isLoggedIn = !!session;
+
+    const handleLogout = async () => {
+        setIsLoggingOut(true);
+        try {
+            await authClient.signOut({
+                fetchOptions: {
+                    onSuccess: () => {
+                        // Si está en cuenta, redirigir a login, sino quedarse en la página actual
+                        if (pathname === '/cuenta') {
+                            router.push('/login');
+                        } else {
+                            router.refresh();
+                        }
+                    },
+                },
+            });
+        } catch (error) {
+            console.error('Error al cerrar sesión:', error);
+            setIsLoggingOut(false);
+        }
+    };
 
     return (
         <div 
@@ -39,20 +65,12 @@ export function Account_Component({ session }: AccountProps) {
                             >
                                 Mi Cuenta
                             </Link>
-                            <Link 
-                                href="/pedidos"
-                                className="block px-4 py-3 text-white hover:bg-sky-800 transition-all"
-                            >
-                                Mis Pedidos
-                            </Link>
                             <button 
-                                className="w-full text-left px-4 py-3 text-white hover:bg-sky-800 transition-all border-t border-sky-700"
-                                onClick={() => {
-                                    // TODO: Implementar logout
-                                    console.log('Logout');
-                                }}
+                                onClick={handleLogout}
+                                disabled={isLoggingOut}
+                                className="cursor-pointer w-full text-left px-4 py-3 text-white hover:bg-sky-800 transition-all border-t border-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Salir
+                                {isLoggingOut ? 'Cerrando sesión...' : 'Cerrar Sesión'}
                             </button>
                         </>
                     ) : (
@@ -61,13 +79,7 @@ export function Account_Component({ session }: AccountProps) {
                                 href="/login"
                                 className="block px-4 py-3 text-white hover:bg-sky-800 transition-all"
                             >
-                                Ingresar
-                            </Link>
-                            <Link 
-                                href="/registro"
-                                className="block px-4 py-3 text-white hover:bg-sky-800 transition-all"
-                            >
-                                Registrarse
+                                Iniciar Sesión
                             </Link>
                         </>
                     )}
