@@ -24,8 +24,90 @@ export async function ProductDetail({ slug }: { slug: Promise<string> }) {
     const isLowStock = product.stock > 0 && product.stock <= (product.lowStockThreshold || 5);
     const inStock = product.stock > 0;
 
+    // JSON-LD Structured Data para Product
+    const productSchema = {
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        name: product.name,
+        description: product.description || product.name,
+        image: product.images?.map(img => img.asset.url) || [],
+        sku: product.sku,
+        brand: product.brand ? {
+            '@type': 'Brand',
+            name: product.brand,
+        } : undefined,
+        offers: {
+            '@type': 'Offer',
+            url: `${process.env.NEXT_PUBLIC_URL}/tienda/${resolvedSlug}`,
+            priceCurrency: 'ARS',
+            price: displayPrice,
+            priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 días
+            availability: inStock
+                ? 'https://schema.org/InStock'
+                : 'https://schema.org/OutOfStock',
+            itemCondition: 'https://schema.org/NewCondition',
+            seller: {
+                '@type': 'Organization',
+                name: 'Luraschi Bikes',
+            },
+        },
+        category: product.categories?.[0]?.name,
+        ...(product.specifications && product.specifications.length > 0 && {
+            additionalProperty: product.specifications.map(spec => ({
+                '@type': 'PropertyValue',
+                name: spec.feature.name,
+                value: spec.value,
+            })),
+        }),
+    };
+
+    const breadcrumbSchema = {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            {
+                '@type': 'ListItem',
+                position: 1,
+                name: 'Inicio',
+                item: process.env.NEXT_PUBLIC_URL,
+            },
+            {
+                '@type': 'ListItem',
+                position: 2,
+                name: 'Tienda',
+                item: `${process.env.NEXT_PUBLIC_URL}/tienda`,
+            },
+            ...(product.categories && product.categories.length > 0 ? [{
+                '@type': 'ListItem',
+                position: 3,
+                name: product.categories[0].name,
+                item: `${process.env.NEXT_PUBLIC_URL}/tienda?category=${product.categories[0].slug.current}`,
+            }] : []),
+            {
+                '@type': 'ListItem',
+                position: product.categories && product.categories.length > 0 ? 4 : 3,
+                name: product.name,
+                item: `${process.env.NEXT_PUBLIC_URL}/tienda/${resolvedSlug}`,
+            },
+        ],
+    };
+
     return (
         <div className="space-y-5">
+            {/* JSON-LD Structured Data */}
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify(productSchema),
+                }}
+            />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify(breadcrumbSchema),
+                }}
+            />
+            
             {/* Breadcrumb */}
             <nav className="text-sm text-slate-400">
                 <Link href="/" className="hover:text-blue-400">Inicio</Link>

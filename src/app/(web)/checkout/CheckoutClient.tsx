@@ -89,6 +89,34 @@ export default function CheckoutClient() {
             const productData = await getCartProducts(cart.map(item => item.id));
             setProducts(productData);
             
+            // Cargar datos del perfil del usuario si está logueado
+            try {
+                const profileResponse = await fetch('/api/user/profile');
+                if (profileResponse.ok) {
+                    const profile = await profileResponse.json();
+                    
+                    // Precargar formulario con datos del usuario
+                    setFormData(prev => ({
+                        ...prev,
+                        firstName: profile.name?.split(' ')[0] || '',
+                        lastName: profile.name?.split(' ').slice(1).join(' ') || '',
+                        email: profile.email || '',
+                        phone: profile.phone || '',
+                        dni: profile.dni || '',
+                        address: profile.address || '',
+                        number: profile.number || '',
+                        floor: profile.floor || '',
+                        apartment: profile.apartment || '',
+                        city: profile.city || '',
+                        province: profile.province || '',
+                        zipCode: profile.zipCode || '',
+                    }));
+                }
+            } catch (error) {
+                // Usuario no logueado o error al cargar perfil, continuar normalmente
+                console.log('No se pudo cargar el perfil del usuario');
+            }
+            
             // Validar stock
             const issues = cart
                 .map(item => {

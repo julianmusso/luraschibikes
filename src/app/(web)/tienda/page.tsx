@@ -5,6 +5,27 @@ import type { ProductFilters as Filters } from "@/types/sanity";
 import { Suspense } from "react";
 import { ProductList } from "./product-list";
 import { FilterPanel } from "./filter-panel";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: 'Tienda de Bicicletas',
+    description: 'Explora nuestro catálogo completo de bicicletas de montaña, ruta, urbanas y accesorios. Filtra por marca, precio, categoría y características para encontrar tu bicicleta ideal.',
+    keywords: ['comprar bicicletas', 'tienda de bicicletas', 'bicicletas en venta', 'catálogo de bicicletas', 'mountain bike', 'bicicletas de ruta'],
+    openGraph: {
+        title: 'Tienda de Bicicletas | Luraschi Bikes',
+        description: 'Explora nuestro catálogo completo de bicicletas de montaña, ruta, urbanas y accesorios.',
+        type: 'website',
+        url: '/tienda',
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'Tienda de Bicicletas | Luraschi Bikes',
+        description: 'Explora nuestro catálogo completo de bicicletas de montaña, ruta, urbanas y accesorios.',
+    },
+    alternates: {
+        canonical: '/tienda',
+    },
+};
 
 export default async function Tienda_Page({
     searchParams,
@@ -38,6 +59,37 @@ export default async function Tienda_Page({
 
     return (
         <main className="max-w-7xl mx-auto my-16 px-4 lg:px-0">
+            {/* JSON-LD Structured Data para SEO */}
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                        '@context': 'https://schema.org',
+                        '@type': 'CollectionPage',
+                        name: 'Tienda de Bicicletas',
+                        description: 'Catálogo completo de bicicletas y accesorios',
+                        url: `${process.env.NEXT_PUBLIC_URL}/tienda`,
+                        breadcrumb: {
+                            '@type': 'BreadcrumbList',
+                            itemListElement: [
+                                {
+                                    '@type': 'ListItem',
+                                    position: 1,
+                                    name: 'Inicio',
+                                    item: process.env.NEXT_PUBLIC_URL,
+                                },
+                                {
+                                    '@type': 'ListItem',
+                                    position: 2,
+                                    name: 'Tienda',
+                                    item: `${process.env.NEXT_PUBLIC_URL}/tienda`,
+                                },
+                            ],
+                        },
+                    }),
+                }}
+            />
+            
             <PageTitle title="Tienda" />
             
             <div className="grid grid-cols-1 lg:grid-cols-7 gap-6 mt-8">

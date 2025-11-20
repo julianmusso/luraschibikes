@@ -21,6 +21,18 @@ model User {
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt
+  
+  // Datos adicionales del perfil
+  phone         String?
+  dni           String?
+  address       String?
+  number        String?
+  floor         String?
+  apartment     String?
+  city          String?
+  province      String?
+  zipCode       String?
+  
   sessions      Session[]
   accounts      Account[]
   orders        Order[]
