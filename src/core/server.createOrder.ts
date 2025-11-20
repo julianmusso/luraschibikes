@@ -19,7 +19,7 @@ type OrderData = {
     nombre: string;
     email: string;
     telefono: string;
-    dni?: string;
+    dni: string;
   };
   items: OrderItem[];
   payment: {
@@ -31,6 +31,9 @@ type OrderData = {
   };
   shipping: {
     direccion: string;
+    numero: string;
+    piso?: string;
+    departamento?: string;
     ciudad: string;
     provincia: string;
     codigoPostal: string;
@@ -61,7 +64,7 @@ export async function createOrder(orderData: OrderData) {
         email: orderData.customer.email,
         name: orderData.customer.nombre,
         phone: orderData.customer.telefono,
-        dni: orderData.customer.dni || ''
+        dni: orderData.customer.dni
       },
       
       items: orderData.items.map(item => ({
@@ -91,6 +94,8 @@ export async function createOrder(orderData: OrderData) {
       shipping: {
         address: {
           street: orderData.shipping.direccion,
+          number: orderData.shipping.numero,
+          floor: orderData.shipping.piso || '',
           city: orderData.shipping.ciudad,
           state: orderData.shipping.provincia,
           zipCode: orderData.shipping.codigoPostal,

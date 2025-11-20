@@ -29,16 +29,21 @@ type Order = {
         name: string;
         email: string;
         phone: string;
+        dni: string;
     };
     items: OrderItem[];
     payment: {
         status: string;
         paymentMethod: string;
         transactionAmount: number;
+        preferenceId?: string;
+        statusDetail?: string;
     };
     shipping: {
         address: {
             street: string;
+            number: string;
+            floor?: string;
             city: string;
             state: string;
             zipCode: string;
@@ -64,7 +69,8 @@ async function getOrder(orderNumber: string): Promise<Order | null> {
             customer: {
                 name: 'Julian Musso',
                 email: 'julian@example.com',
-                phone: '+54 9 11 1234-5678'
+                phone: '+54 9 11 1234-5678',
+                dni: '12345678'
             },
             items: [
                 {
@@ -93,11 +99,14 @@ async function getOrder(orderNumber: string): Promise<Order | null> {
             payment: {
                 status: 'approved',
                 paymentMethod: 'mercadopago',
-                transactionAmount: 520000
+                transactionAmount: 520000,
+                preferenceId: 'mock-preference-id'
             },
             shipping: {
                 address: {
-                    street: 'Av. Corrientes 1234',
+                    street: 'Av. Corrientes',
+                    number: '1234',
+                    floor: '5A',
                     city: 'Buenos Aires',
                     state: 'CABA',
                     zipCode: '1043'
@@ -121,8 +130,24 @@ async function getOrder(orderNumber: string): Promise<Order | null> {
             status,
             customer,
             items,
-            payment,
-            shipping,
+            payment{
+                status,
+                paymentMethod,
+                transactionAmount,
+                preferenceId,
+                statusDetail
+            },
+            shipping{
+                address{
+                    street,
+                    number,
+                    floor,
+                    city,
+                    state,
+                    zipCode
+                },
+                trackingNumber
+            },
             totals,
             createdAt,
             paidAt
@@ -165,13 +190,49 @@ async function OrderContent({ orderIdPromise }: { orderIdPromise: Promise<string
                         <h2 className={`text-${statusInfo.color}-400 font-bold text-2xl mb-1`}>{statusInfo.title}</h2>
                         <p className={`text-${statusInfo.color}-300`}>{statusInfo.description}</p>
 
-                        {order.status === 'pending' && (
+                        {/* Botón de pagar (solo para MercadoPago con pago pendiente/rechazado) */}
+                        {(order.payment.status === 'pending' || order.payment.status === 'rejected' || order.payment.status === 'cancelled') && order.payment.preferenceId && (
                             <div className="mt-4">
                                 <p className="text-sm text-yellow-200 mb-2">
-                                    Podés completar el pago desde MercadoPago. El pedido se confirmará automáticamente.
+                                    {order.payment.status === 'rejected' 
+                                        ? 'El pago fue rechazado. Podés intentar nuevamente.'
+                                        : order.payment.status === 'cancelled'
+                                        ? 'El pago fue cancelado. Podés volver a intentar.'
+                                        : 'Podés completar el pago desde MercadoPago. El pedido se confirmará automáticamente.'
+                                    }
+                                </p>
+                                {order.payment.statusDetail && (
+                                    <p className="text-xs text-yellow-300/70 mb-3">
+                                        Detalle: {order.payment.statusDetail}
+                                    </p>
+                                )}
+                                <a
+                                    href={`https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=${order.payment.preferenceId}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-block bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-2 rounded transition-colors"
+                                >
+                                    💳 Completar Pago
+                                </a>
+                                <p className="text-xs text-yellow-300/70 mt-2">
+                                    Esta página se actualiza automáticamente cada 10 segundos.
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Información para pagos offline (transferencia/efectivo) */}
+                        {order.payment.status === 'pending' && !order.payment.preferenceId && (
+                            <div className="mt-4">
+                                <p className="text-sm text-yellow-200 mb-2">
+                                    {order.payment.paymentMethod === 'transferencia' 
+                                        ? 'Pago por transferencia bancaria - Te contactaremos con los datos para realizar la transferencia.'
+                                        : order.payment.paymentMethod === 'efectivo'
+                                        ? 'Pago en efectivo - Te contactaremos para coordinar la entrega y el pago.'
+                                        : 'Te contactaremos para coordinar el pago.'
+                                    }
                                 </p>
                                 <p className="text-xs text-yellow-300/70">
-                                    Esta página se actualiza automáticamente cada 10 segundos.
+                                    Revisá tu email para más detalles.
                                 </p>
                             </div>
                         )}
@@ -243,6 +304,10 @@ async function OrderContent({ orderIdPromise }: { orderIdPromise: Promise<string
                                 <span className="text-slate-400">Teléfono:</span>
                                 <span className="font-medium">{order.customer.phone}</span>
                             </div>
+                            <div className="flex justify-between">
+                                <span className="text-slate-400">DNI:</span>
+                                <span className="font-medium">{order.customer.dni}</span>
+                            </div>
                         </div>
                     </LuraschiCard>
 
@@ -250,7 +315,7 @@ async function OrderContent({ orderIdPromise }: { orderIdPromise: Promise<string
                     <LuraschiCard>
                         <h2 className="text-xl font-bold mb-4">Dirección de Envío</h2>
                         <div className="text-sm space-y-1">
-                            <p>{order.shipping.address.street}</p>
+                            <p>{order.shipping.address.street} {order.shipping.address.number}{order.shipping.address.floor ? `, Piso ${order.shipping.address.floor}` : ''}</p>
                             <p>{order.shipping.address.city}, {order.shipping.address.state}</p>
                             <p>CP: {order.shipping.address.zipCode}</p>
                             {order.shipping.trackingNumber && (
@@ -295,11 +360,19 @@ async function OrderContent({ orderIdPromise }: { orderIdPromise: Promise<string
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-slate-400">Estado del pago:</span>
-                                    <span className={`font-medium ${order.payment.status === 'approved' || order.payment.status === 'paid'
+                                    <span className={`font-medium ${
+                                        order.payment.status === 'approved' || order.payment.status === 'paid'
                                         ? 'text-green-400'
+                                        : order.payment.status === 'rejected'
+                                        ? 'text-red-400'
                                         : 'text-yellow-400'
-                                        }`}>
-                                        {order.payment.status === 'approved' || order.payment.status === 'paid' ? 'Pagado' : 'Pendiente'}
+                                    }`}>
+                                        {order.payment.status === 'approved' || order.payment.status === 'paid' 
+                                            ? 'Pagado' 
+                                            : order.payment.status === 'rejected'
+                                            ? 'Rechazado'
+                                            : 'Pendiente'
+                                        }
                                     </span>
                                 </div>
                             </div>

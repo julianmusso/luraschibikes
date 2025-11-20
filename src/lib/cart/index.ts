@@ -124,4 +124,7 @@ export function updateQuantity(productId: string, quantity: number): CartItem[] 
 export function clearCart(): void {
     if (typeof window === 'undefined') return;
     localStorage.removeItem('cart');
+    
+    // Notificar que el carrito fue limpiado
+    window.dispatchEvent(new Event('cartUpdated'));
 }

@@ -5,7 +5,7 @@ export const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Configuración del remitente por defecto
 const DEFAULT_FROM = {
-    email: 'pedidos@luraschibikes.com.ar',
+    email: 'sistema-automatico@notificaciones.luraschibikes.cdcop.site',
     name: 'Luraschi Bikes'
 };
 

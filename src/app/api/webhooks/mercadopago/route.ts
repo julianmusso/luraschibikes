@@ -6,25 +6,42 @@ import { client } from '@/sanity/lib/client';
 import { sendPaymentConfirmedEmail } from '@/core/email.paymentConfirmed';
 import { sendPaymentRefundedEmail } from '@/core/email.paymentRefunded';
 
+type CartItem = {
+  id: string;
+  quantity: number;
+};
+
+type Product = {
+  id: string;
+  name: string;
+  price: number;
+  stock: number;
+  image: string;
+};
+
 export async function POST(request: NextRequest) {
   try {
-    // 1. Validar firma HMAC
+    // 1. Validar firma HMAC (opcional - solo en producción con secret configurado)
     const xSignature = request.headers.get('x-signature');
     const xRequestId = request.headers.get('x-request-id');
     const url = new URL(request.url);
     const dataId = url.searchParams.get('data.id');
 
-    if (xSignature && xRequestId && dataId) {
+    // Solo validar firma si está configurado el secret (producción)
+    if (process.env.MERCADOPAGO_WEBHOOK_SECRET && xSignature && xRequestId && dataId) {
       const isValid = validateSignature(xSignature, xRequestId, dataId);
       if (!isValid) {
         console.error('❌ Firma inválida');
         return NextResponse.json({ error: 'Invalid signature' }, { status: 403 });
       }
+      console.log('✅ Firma HMAC válida');
+    } else if (!process.env.MERCADOPAGO_WEBHOOK_SECRET) {
+      console.log('⚠️  WEBHOOK_SECRET no configurado, aceptando webhooks sin validación (modo desarrollo)');
     }
 
     // 2. Leer body
     const body = await request.json();
-    console.log('[MP Webhook]', body.type, body.data?.id);
+    console.log('>>> 📨 [MP Webhook]', body.type, 'ID:', body.data?.id, 'Live:', body.live_mode);
 
     // 3. Responder INMEDIATAMENTE 200 (antes de 22 segundos)
     // Procesar en segundo plano sin bloquear la respuesta
@@ -49,7 +66,7 @@ async function processPaymentNotification(paymentId: string) {
       `https://api.mercadopago.com/v1/payments/${paymentId}`,
       {
         headers: {
-          'Authorization': `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`,
+          'Authorization': `Bearer ${process.env.MP_ACCESS_TOKEN}`,
         },
       }
     );
@@ -70,14 +87,26 @@ async function processPaymentNotification(paymentId: string) {
 
     // Extraer metadata
     const metadata = payment.metadata;
-    const cartItems = JSON.parse(metadata.cart_items);
+    
+    // Si no hay metadata, es una prueba desde el panel de MercadoPago
+    if (!metadata || !metadata.order_number) {
+      console.log('🧪 WEBHOOK DE PRUEBA - Sin metadata de orden');
+      console.log('Payment ID:', paymentId);
+      console.log('Status:', payment.status);
+      console.log('Amount:', payment.transaction_amount);
+      console.log('Payer:', payment.payer);
+      console.log('✅ Webhook test recibido correctamente (sin procesar orden)');
+      return;
+    }
+
+    const cartItems: CartItem[] = JSON.parse(metadata.cart_items);
 
     // Validación final de stock
-    const productIds = cartItems.map((item: { id: string }) => item.id);
-    const products = await getCartProducts(productIds);
+    const productIds = cartItems.map((item) => item.id);
+    const products: Product[] = await getCartProducts(productIds);
 
-    const stockCheck = cartItems.every((item: { id: string; quantity: number }) => {
-      const product = products.find((p: { id: string; stock: number }) => p.id === item.id);
+    const stockCheck = cartItems.every((item) => {
+      const product = products.find((p: Product) => p.id === item.id);
       return product && product.stock >= item.quantity;
     });
 
@@ -88,7 +117,7 @@ async function processPaymentNotification(paymentId: string) {
       await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}/refunds`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`,
+          'Authorization': `Bearer ${process.env.MP_ACCESS_TOKEN}`,
           'Content-Type': 'application/json'
         }
       });
@@ -147,7 +176,7 @@ async function processPaymentNotification(paymentId: string) {
 
     // Actualizar stock
     await updateProductsStock(
-      cartItems.map((item: { id: string; quantity: number }) => ({
+      cartItems.map((item) => ({
         productId: item.id,
         quantity: item.quantity
       }))
@@ -156,8 +185,8 @@ async function processPaymentNotification(paymentId: string) {
     console.log(`✅ Stock actualizado correctamente`);
 
     // Enviar email de confirmación de pago
-    const productsWithQuantity = cartItems.map((item: { id: string; quantity: number }) => {
-      const product = products.find((p: { id: string; name: string; price: number }) => p.id === item.id);
+    const productsWithQuantity = cartItems.map((item) => {
+      const product = products.find((p: Product) => p.id === item.id);
       return {
         name: product?.name || 'Producto',
         quantity: item.quantity,

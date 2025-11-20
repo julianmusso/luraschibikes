@@ -5,7 +5,7 @@ import { createOrder } from './server.createOrder';
 import MercadoPagoConfig, { Preference } from 'mercadopago';
 
 const client = new MercadoPagoConfig({ 
-  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN! 
+  accessToken: process.env.MP_ACCESS_TOKEN! 
 });
 
 type CartItem = {
@@ -26,17 +26,32 @@ type BuyingFormData = {
   lastName: string;
   email: string;
   phone: string;
+  dni: string;
   address: string;
+  number: string;
+  floor?: string;
+  apartment?: string;
   city: string;
   province: string;
   zipCode: string;
-  dni?: string;
 };
 
-export async function StartBuying(cart: CartItem[], customerData: BuyingFormData) {
+export async function StartBuying(
+  cart: CartItem[], 
+  customerData: BuyingFormData,
+  paymentMethod: 'mercadopago' | 'transferencia' | 'efectivo' = 'mercadopago'
+) {
   try {
+    console.log('\n========================================')
+    console.log('🛒 INICIO DE PROCESO DE COMPRA');
+    console.log('========================================');
+    console.log('📦 Carrito recibido:', JSON.stringify(cart, null, 2));
+    console.log('👤 Datos del cliente:', JSON.stringify(customerData, null, 2));
+    console.log('💳 Método de pago:', paymentMethod);
+    
     // 1. Validación final de stock
     const products = await getCartProducts(cart.map(item => item.id));
+    console.log('\n✅ Productos obtenidos de Sanity:', products.length, 'items');
     
     const stockIssues = cart
       .map(item => {
@@ -56,21 +71,26 @@ export async function StartBuying(cart: CartItem[], customerData: BuyingFormData
       .filter(Boolean);
 
     if (stockIssues.length > 0) {
+      console.log('\n❌ STOCK INSUFICIENTE:');
+      console.log(JSON.stringify(stockIssues, null, 2));
       return {
         success: false,
         error: 'insufficient_stock',
         issues: stockIssues
       };
     }
+    
+    console.log('\n✅ Stock validado correctamente - Todos los productos disponibles');
 
     // 2. Crear orden PENDIENTE antes de la preferencia de MercadoPago
+    console.log('\n📝 Creando orden en Sanity...');
     const orderResult = await createOrder({
       status: 'pending',
       customer: {
         nombre: `${customerData.firstName} ${customerData.lastName}`,
         email: customerData.email,
         telefono: customerData.phone,
-        dni: customerData.dni || ''
+        dni: customerData.dni
       },
       items: cart.map(item => {
         const product = products.find((p: CartProduct) => p.id === item.id)!;
@@ -85,11 +105,14 @@ export async function StartBuying(cart: CartItem[], customerData: BuyingFormData
         };
       }),
       payment: {
-        method: 'mercadopago',
+        method: paymentMethod,
         status: 'pending'
       },
       shipping: {
         direccion: customerData.address,
+        numero: customerData.number,
+        piso: customerData.floor,
+        departamento: customerData.apartment,
         ciudad: customerData.city,
         provincia: customerData.province,
         codigoPostal: customerData.zipCode
@@ -108,6 +131,7 @@ export async function StartBuying(cart: CartItem[], customerData: BuyingFormData
     });
 
     if (!orderResult.success) {
+      console.log('\n❌ ERROR creando orden en Sanity:', orderResult.error);
       return {
         success: false,
         error: 'order_creation_failed'
@@ -115,8 +139,26 @@ export async function StartBuying(cart: CartItem[], customerData: BuyingFormData
     }
 
     const { orderNumber } = orderResult;
+    console.log('\n✅ Orden creada exitosamente:');
+    console.log('   Order ID:', orderResult.orderId);
+    console.log('   Order Number:', orderNumber);
 
-    // 3. Crear preferencia de MercadoPago
+    // Si es pago offline (transferencia/efectivo), retornar sin crear preferencia de MercadoPago
+    if (paymentMethod === 'transferencia' || paymentMethod === 'efectivo') {
+      console.log('\n💰 Pago offline - No se requiere MercadoPago');
+      console.log('========================================');
+      console.log('✅ PROCESO COMPLETADO (PAGO OFFLINE)');
+      console.log('========================================\n');
+      
+      return {
+        success: true,
+        orderNumber,
+        paymentMethod
+      };
+    }
+
+    // 3. Crear preferencia de MercadoPago (solo para pago online)
+    console.log('\n💳 Creando preferencia de MercadoPago...');
     const preference = new Preference(client);
     
     const preferenceData = {
@@ -159,9 +201,12 @@ export async function StartBuying(cart: CartItem[], customerData: BuyingFormData
         customer_email: customerData.email,
         customer_name: `${customerData.firstName} ${customerData.lastName}`,
         customer_phone: customerData.phone,
-        customer_dni: customerData.dni || '',
+        customer_dni: customerData.dni,
         // Datos de envío
         shipping_address: customerData.address,
+        shipping_number: customerData.number,
+        shipping_floor: customerData.floor || '',
+        shipping_apartment: customerData.apartment || '',
         shipping_city: customerData.city,
         shipping_province: customerData.province,
         shipping_zipcode: customerData.zipCode
@@ -169,16 +214,33 @@ export async function StartBuying(cart: CartItem[], customerData: BuyingFormData
     };
 
     const response = await preference.create({ body: preferenceData });
+    
+    console.log('\n✅ Preferencia de MercadoPago creada:');
+    console.log('   Preference ID:', response.id);
+    console.log('   Init Point:', response.init_point);
+    console.log('\n📋 METADATA enviada a MercadoPago:');
+    console.log(JSON.stringify(preferenceData.metadata, null, 2));
+    console.log('\n📦 ITEMS enviados a MercadoPago:');
+    console.log(JSON.stringify(preferenceData.items, null, 2));
+    console.log('\n🔙 BACK URLs configuradas:');
+    console.log(JSON.stringify(preferenceData.back_urls, null, 2));
+    console.log('\n========================================');
+    console.log('✅ PROCESO COMPLETADO EXITOSAMENTE');
+    console.log('========================================\n');
 
     return {
       success: true,
       init_point: response.init_point!,
       preference_id: response.id!,
-      orderNumber
+      orderNumber,
+      paymentMethod
     };
 
   } catch (error) {
-    console.error('Error en StartBuying:', error);
+    console.log('\n========================================');
+    console.log('❌ ERROR EN PROCESO DE COMPRA');
+    console.log('========================================');
+    console.error('Error completo:', error);
     
     // Capturar errores específicos de MercadoPago
     let errorMessage = 'Error desconocido al procesar la compra';
